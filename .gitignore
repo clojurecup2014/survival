@@ -6,3 +6,7 @@
 /.lein-failures
 /checkouts
 /.lein-deps-sum
+.lein-*
+.nrepl-port
+/target
+/resources/public/js/out
