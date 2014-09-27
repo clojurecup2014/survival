@@ -2,5 +2,6 @@
        :plugins [[com.cemerick/austin "0.1.5"]]
        :source-paths ["dev"]
        :env {:server {:port 8080}
-             :storage {:uri "datomic:dev://localhost:4334/app"}
+             :storage {:to-disk? false
+                       :path "db.clj"}
              :profile :dev}}}

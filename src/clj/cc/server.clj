@@ -8,7 +8,8 @@
             [clojail.testers :refer [secure-tester]]
             [clojure.edn :as edn]
             [ring.middleware.params]
-            [ring.middleware.edn :refer [wrap-edn-params]]))
+            [ring.middleware.edn :refer [wrap-edn-params]]
+            [ring.middleware.session :as session]))
 
 (def sb (sandbox secure-tester))
 
@@ -35,9 +36,10 @@
                                            "Some error occurred...")))))
    (not-found "404")))
 
-(defn my-handler [component]
+(defn my-handler [{storage :storage :as component}]
   (-> (my-routes component)
-      (wrap-edn-params)))
+      (wrap-edn-params)
+      (session/wrap-session {:store storage})))
 
 (defrecord Webserver [config storage server]
   component/Lifecycle
