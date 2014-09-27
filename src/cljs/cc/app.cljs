@@ -28,16 +28,27 @@
              #js {"Content-Type" "application/edn"
                   "Accept" "application/edn"}))))
 
-(def app-state (atom {:executing nil :results {}}))
+(def app-state (atom {:text ""}))
 
 (def c (chan))
 
-(edn-xhr {:method :get :data {} :channel c :url "/test"})
+(go (while true
+      (let [e (<! c)]
+        (.log js/console e))))
 
-(go (loop []
-      (let [v (<! c)]
-        (.log js/console (:text v)))
-      (recur)))
+(defn handle-new-code [code-str state owner]
+  (edn-xhr {:method :post
+            :data {:code code-str}
+            :url "/test"
+            :channel c}))
 
-(.log js/console "Hello world")
+(defn code-editor [state owner]
+  (reify
+    om/IRender
+    (render [_]
+      (html
+       [:div#editor
+        [:textarea {:onBlur #(handle-new-code (.-value (.-target %)) state owner)}]]))))
+
+(om/root code-editor app-state {:target (gdom/getElement "app")})
 

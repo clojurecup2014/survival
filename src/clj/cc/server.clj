@@ -14,7 +14,7 @@
 
 (defn edn-response [data & [status]]
   {:status (or status 200)
-   :body (str data)
+   :body (pr-str data)
    :headers {"Content-Type" "application/edn"}})
 
 (defn my-routes [{:keys [storage]}]

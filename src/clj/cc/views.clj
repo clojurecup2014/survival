@@ -3,10 +3,10 @@
             [hiccup.page :refer [html5]]
             [environ.core :refer [env]]))
 
-(defn base-page []
+(defn base-page [content]
   (html5
    [:body
-    [:div {:id "app"}]
+    [:div {:id "app"} content]
     (condp = (:profile env :dev)
       :dev (html
             [:script {:src "/js/react.js"}]
