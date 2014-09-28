@@ -27,8 +27,8 @@
    (resources "/")
    (GET "/" [] (index/page))
    (GET "/init" {session :session} (if-let [user-id (:user-id session)]
-                                     (edn-response {:user-id user-id})
-                                     (edn-response {:user-id nil})))
+                                     (edn-response {:login {:user-id user-id}})
+                                     (edn-response {:login {:user-id nil}})))
    (POST "/login" [username password] (if-let [user (storage/login storage username password)]
                                         (as user (edn-response {:success? true
                                                                 :user-id (:id user)}))

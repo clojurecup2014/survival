@@ -42,7 +42,7 @@
             :channel c}))
 
 (def error-msg {:failed-auth "Login failed, check your username/password"
-                :user-exists "Can't create user, one already exists with that username'"})
+                :user-exists "Can't create user, one already exists with that username"})
 
 (defn change-user-state [state {:keys [action data]}]
   (let [rc (chan)]
@@ -67,24 +67,37 @@
 (defn signup [state] (change-user-state state {:action :signup :data {:username (username) :password (password)}}))
 (defn logout [state] (change-user-state state {:action :logout}))
 
+(defn login-area [login-info owner]
+  (reify
+    om/IRender
+    (render [this]
+      (html
+       (if-not (:user-id login-info)
+         [:div#login
+          [:div#error [:span#error (:error login-info)]]
+          [:input#username {:type "text"}]
+          [:input#password {:type "text"}]
+          [:button#login {:onClick #(login login-info)} "Login"]
+          [:button#signup {:onClick #(signup login-info)} "Sign Up"]]
+         [:button#logout {:onClick #(logout login-info)} "Logout"])))))
+
+(defn user-area [data owner]
+  (reify
+    om/IRender
+    (render [this]
+      (html
+       [:div#editor
+        [:textarea
+         {:onBlur #(handle-new-code (.-value (.-target %)) data owner)}]]))))
+
 (defn app [state owner]
   (reify
     om/IRender
     (render [_]
       (html
        [:div#app
-        (if-not (:user-id state)
-          [:div#login
-           [:div#error [:span#error (:error state)]]
-           [:input#username {:type "text"}]
-           [:input#password {:type "text"}]
-           [:button#login {:onClick #(login state)} "Login"]
-           [:button#signup {:onClick #(signup state)} "Sign Up"]]
-          (html
-           [:button#logout {:onClick #(logout state)} "Logout"]
-           [:div#editor
-            [:textarea
-             {:onBlur #(handle-new-code (.-value (.-target %)) state owner)}]]))]))))
+        (om/build login-area (:login state))
+        (om/build user-area (:data state))]))))
 
 (defn fetch-initial-state []
   (let [response-chan (chan)]
