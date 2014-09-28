@@ -1,7 +1,26 @@
 (ns cc.storage
   (:require [com.stuartsierra.component :as component]
             [clojure.core.async :refer [<! chan]]
-            [ring.middleware.session.store :refer [SessionStore]]))
+            [ring.middleware.session.store :refer [SessionStore]]
+            [crypto.password.scrypt :as pw]))
+
+(defn create-user [username password]
+  #(let [{next-id :next-id :as storage} %]
+     (-> (assoc-in storage [:users next-id] {:username username
+                                             :password (pw/encrypt password)
+                                             :id next-id})
+         (assoc-in [:next-id] (inc next-id)))))
+
+(defn create-user! [{storage :storage} username password]
+  (swap! storage (create-user username password)))
+
+(defn lookup-by-username [{storage :storage} username]
+  (first (filter #(= (:username %) username) (vals (:users @storage)))))
+
+(defn login [storage username password]
+  (when-let [user (lookup-by-username storage username)]
+    (when (pw/check password (:password user))
+      user)))
 
 (def cs (map char (concat (range 48 58) (range 66 92) (range 97 123))))
 (defn rand-chars []

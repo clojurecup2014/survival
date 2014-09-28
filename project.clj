@@ -12,7 +12,8 @@
                  [hiccup "1.0.5"]
                  [om "0.7.3"]
                  [sablono "0.2.22"]
-                 [clojail "1.0.6"]]
+                 [clojail "1.0.6"]
+                 [crypto-password "0.1.3"]]
   :source-paths ["src/cljs" "src/clj"]
   :cljsbuild {:builds
               [{:id "dev"
