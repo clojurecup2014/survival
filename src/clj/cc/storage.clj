@@ -12,7 +12,7 @@
          (assoc-in [:next-id] (inc next-id)))))
 
 (defn create-user! [{storage :storage} username password]
-  (swap! storage (create-user username password)))
+  (first (filter #(= (:username %) username) (vals (:users (swap! storage (create-user username password)))))))
 
 (defn lookup-by-username [{storage :storage} username]
   (first (filter #(= (:username %) username) (vals (:users @storage)))))

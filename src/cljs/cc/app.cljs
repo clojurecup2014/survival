@@ -6,6 +6,7 @@
             [goog.events :as events]
             [goog.dom :as gdom]
             [cljs.reader :as reader]
+            [clojure.string]
             [sablono.core :as html :refer-macros [html]])
   (:import [goog.net XhrIo]
            goog.net.EventType
@@ -43,24 +44,28 @@
 (def error-msg {:failed-auth "Login failed, check your username/password"
                 :user-exists "Can't create user, one already exists with that username'"})
 
-(defn change-user-state [state url]
+(defn change-user-state [state {:keys [action data]}]
   (let [rc (chan)]
     (edn-xhr {:method :post
-              :url url
+              :url (clojure.string/replace-first (str action) #":" "/")
               :channel rc
-              :data {:username  (.-value (gdom/getElement "username"))
-                     :password (.-value (gdom/getElement "password"))}})
-    (go (let [{:keys [success? error user-id]} (<! rc)]
+              :data data})
+    (go (let [{:keys [success? error user-id] :as m} (<! rc)]
           (if success?
             (om/transact! state (fn [s]
                                   (-> s
-                                      (assoc :logged-in? true)
-                                      (assoc :user-id user-id))))
+                                      (assoc :user-id user-id)
+                                      (dissoc :error))))
             (om/transact! state (fn [s]
                                   (-> s
                                       (assoc :error (error-msg error))))))))))
-(defn login [state] (change-user-state state "/login"))
-(defn signup [state] (change-user-state state "/signup"))
+
+(defn username [] (.-value (gdom/getElement "username")))
+(defn password [] (.-value (gdom/getElement "password")))
+
+(defn login [state] (change-user-state state {:action :login :data {:username (username) :password (password)}}))
+(defn signup [state] (change-user-state state {:action :signup :data {:username (username) :password (password)}}))
+(defn logout [state] (change-user-state state {:action :logout}))
 
 (defn app [state owner]
   (reify
@@ -68,16 +73,18 @@
     (render [_]
       (html
        [:div#app
-        (when-not (:logged-in? state)
+        (if-not (:user-id state)
           [:div#login
-           [:span#error (:error state)]
+           [:div#error [:span#error (:error state)]]
            [:input#username {:type "text"}]
            [:input#password {:type "text"}]
            [:button#login {:onClick #(login state)} "Login"]
-           [:button#signup {:onClick #(signup state)} "Sign Up"]])
-        [:div#editor
-         [:textarea
-          {:onBlur #(handle-new-code (.-value (.-target %)) state owner)}]]]))))
+           [:button#signup {:onClick #(signup state)} "Sign Up"]]
+          (html
+           [:button#logout {:onClick #(logout state)} "Logout"]
+           [:div#editor
+            [:textarea
+             {:onBlur #(handle-new-code (.-value (.-target %)) state owner)}]]))]))))
 
 (defn fetch-initial-state []
   (let [response-chan (chan)]

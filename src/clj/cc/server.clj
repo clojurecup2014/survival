@@ -13,7 +13,7 @@
             [ring.middleware.session :as session]))
 
 (defn as [user res]
-  (assoc-in res [:session :user] user))
+  (assoc-in res [:session :user-id] (:id user)))
 
 (def sb (sandbox secure-tester))
 
@@ -26,22 +26,23 @@
   (routes
    (resources "/")
    (GET "/" [] (index/page))
-   (GET "/init" {session :session} (if-let [user (:user session)]
-                                     (edn-response {:user-id user
-                                                    :logged-in? true})
-                                     (edn-response {:user-id nil
-                                                    :logged-in? nil})))
+   (GET "/init" {session :session} (if-let [user-id (:user-id session)]
+                                     (edn-response {:user-id user-id})
+                                     (edn-response {:user-id nil})))
    (POST "/login" [username password] (if-let [user (storage/login storage username password)]
-                                        (as user (edn-response {:success? false
+                                        (as user (edn-response {:success? true
                                                                 :user-id (:id user)}))
                                         (edn-response {:success? false
                                                        :error :failed-auth})))
    (POST "/signup" [username password] (if-not (storage/lookup-by-username storage username)
-                                         (let [user (storage/create-user! storage username password)]
-                                           (as user (edn-response {:success? true
-                                                                   :user-id (:id user)})))
+                                         (do (storage/create-user! storage username password)
+                                             (let [user (storage/lookup-by-username storage username)]
+                                               (as user (edn-response {:success? true
+                                                                       :user-id (:id user)}))))
                                          (edn-response {:success? false
                                                         :error :user-exists})))
+   (POST "/logout" [] (as nil (edn-response {:success? true
+                                             :user-id nil})))
    (POST "/test" [code] (edn-response (try
                                         (sb (clojure.edn/read-string code))
                                         (catch SecurityException e
